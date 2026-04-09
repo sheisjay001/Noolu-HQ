@@ -1,4 +1,6 @@
+import * as React from "react";
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -99,8 +101,9 @@ function Stepper({ activeStep }: { activeStep: number }) {
   );
 }
 
-// 2. Step 1: Account Creation
+// 2. Step 1: Account Creation (includes OTP verification as sub-step)
 function Step1({ onNext, initialData }: any) {
+  const [subStep, setSubStep] = useState(1); // 1 = form, 2 = OTP
   const [email, setEmail] = useState(initialData.email || "");
   const [password, setPassword] = useState(initialData.password || "");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -109,7 +112,70 @@ function Step1({ onNext, initialData }: any) {
   const [errors, setErrors] = useState({ email: "", password: "", confirm: "" });
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // OTP state
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [otpError, setOtpError] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(RESEND_TIMEOUT);
+  const [canResend, setCanResend] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (resendCountdown <= 0) {
+      setCanResend(true);
+      return;
+    }
+    const t = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCountdown]);
+
+  const handleChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...otp];
+    next[index] = digit;
+    setOtp(next);
+    setOtpError("");
+    if (digit && index < OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    const next = Array(OTP_LENGTH).fill("");
+    pasted.split("").forEach((c, i) => { next[i] = c; });
+    setOtp(next);
+    const lastFilled = Math.min(pasted.length, OTP_LENGTH - 1);
+    inputRefs.current[lastFilled]?.focus();
+  };
+
+  const handleResend = () => {
+    if (!canResend) return;
+    setCanResend(false);
+    setResendCountdown(RESEND_TIMEOUT);
+    setOtp(Array(OTP_LENGTH).fill(""));
+    setOtpError("");
+    inputRefs.current[0]?.focus();
+  };
+
+  const handleVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otp.join("");
+    if (code.length < OTP_LENGTH) {
+      setOtpError("Please enter all 6 digits of the verification code.");
+      return;
+    }
+    onNext({ email, password });
+  };
+
+  const handleAccountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const emailErr = validate.email(email);
     const passErr = validate.password(password);
@@ -119,12 +185,72 @@ function Step1({ onNext, initialData }: any) {
     setSubmitted(true);
 
     if (!emailErr && !passErr && !confErr) {
-      onNext({ email, password });
+      setSubStep(2); // Go to OTP verification
+      setResendCountdown(RESEND_TIMEOUT);
     }
   };
 
+  // OTP Verification Form
+  if (subStep === 2) {
+    return (
+      <form onSubmit={handleVerify} noValidate className="flex flex-col items-center gap-10 self-stretch w-full">
+        <div className="flex flex-col items-center justify-center gap-10 self-stretch w-full">
+          <div className="flex flex-col items-center gap-2 self-stretch w-full">
+            <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-2xl md:text-[32px] tracking-[0] leading-[normal]">
+              Verify Email address
+            </h2>
+            <p className="self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-sm tracking-[0] leading-[normal]">
+              A six digit verification code has been sent to <span className="font-medium text-indigo-600">{email || "your email address"}</span>. Enter it here to verify your account.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-start gap-4 self-stretch w-full">
+            <div className="flex items-start gap-3 self-stretch w-full" onPaste={handlePaste}>
+              {otp.map((digit, i) => (
+                <div key={i} className="flex flex-col h-14 items-start gap-2 flex-1">
+                  <Input
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleChange(i, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(i, e)}
+                    className={`h-14 w-full border border-solid ${otpError ? "border-red-400" : digit ? "border-indigo-400" : "border-[#3a3a3a1a]"} flex items-center justify-center text-center text-xl`}
+                  />
+                </div>
+              ))}
+            </div>
+            <FieldError message={otpError} />
+
+            <p className="self-stretch [font-family:'Montserrat',Helvetica] font-normal text-[14px] text-right leading-4">
+              <span className="font-medium text-[#3a3a3acc] tracking-[0]">Didn't get Code? </span>
+              {canResend ? (
+                <button type="button" onClick={handleResend} className="font-medium text-indigo-600 tracking-[0.06px] cursor-pointer hover:underline bg-transparent border-0 p-0">
+                  Resend code
+                </button>
+              ) : (
+                <span className="font-medium text-indigo-600 tracking-[0.06px]">Resend code in {resendCountdown} sec</span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start gap-2 self-stretch w-full">
+          <Button type="submit" className="flex h-10 items-center justify-center gap-2 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0]">
+            Verify
+          </Button>
+          <button type="button" onClick={() => setSubStep(1)} className="self-stretch text-center [font-family:'Montserrat',Helvetica] font-medium text-[11px] text-indigo-600 hover:underline bg-transparent border-0 p-0 cursor-pointer">
+            Back to account creation
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  // Account Creation Form
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col items-start gap-10 self-stretch w-full">
+    <form onSubmit={handleAccountSubmit} noValidate className="flex flex-col items-start gap-10 self-stretch w-full">
       <div className="flex flex-col items-start justify-center gap-2 self-stretch w-full">
         <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-[32px] tracking-[0] leading-[normal]">
           Let's start with the basics
@@ -226,137 +352,14 @@ function Step1({ onNext, initialData }: any) {
   );
 }
 
-// 3. Step 2: OTP Verification
+// 3. Step 2: Tell Us About You
 interface Step2Props {
-  email: string;
-  onNext: () => void;
-  onBack: () => void;
-}
-
-function Step2({ email, onNext, onBack }: Step2Props) {
-  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
-  const [error, setError] = useState("");
-  const [resendCountdown, setResendCountdown] = useState(RESEND_TIMEOUT);
-  const [canResend, setCanResend] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  useEffect(() => {
-    if (resendCountdown <= 0) {
-      setCanResend(true);
-      return;
-    }
-    const t = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCountdown]);
-
-  const handleChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const next = [...otp];
-    next[index] = digit;
-    setOtp(next);
-    setError("");
-    if (digit && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
-    if (!pasted) return;
-    const next = Array(OTP_LENGTH).fill("");
-    pasted.split("").forEach((c, i) => { next[i] = c; });
-    setOtp(next);
-    const lastFilled = Math.min(pasted.length, OTP_LENGTH - 1);
-    inputRefs.current[lastFilled]?.focus();
-  };
-
-  const handleResend = () => {
-    if (!canResend) return;
-    setCanResend(false);
-    setResendCountdown(RESEND_TIMEOUT);
-    setOtp(Array(OTP_LENGTH).fill(""));
-    setError("");
-    inputRefs.current[0]?.focus();
-  };
-
-  const handleVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otp.join("");
-    if (code.length < OTP_LENGTH) {
-      setError("Please enter all 6 digits of the verification code.");
-      return;
-    }
-    onNext();
-  };
-
-  return (
-    <form onSubmit={handleVerify} noValidate className="flex flex-col items-center gap-10 self-stretch w-full">
-      <div className="flex flex-col items-center justify-center gap-10 self-stretch w-full">
-        <div className="flex flex-col items-center gap-2 self-stretch w-full">
-          <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-2xl md:text-[32px] tracking-[0] leading-[normal]">
-            Verify Email address
-          </h2>
-          <p className="self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-sm tracking-[0] leading-[normal]">
-            A six digit verification code has been sent to <span className="font-medium text-indigo-600">{email || "your email address"}</span>. Enter it here to verify your account.
-          </p>
-        </div>
-
-        <div className="flex flex-col items-start gap-4 self-stretch w-full">
-          <div className="flex items-start gap-3 self-stretch w-full" onPaste={handlePaste}>
-            {otp.map((digit, i) => (
-              <div key={i} className="flex flex-col h-14 items-start gap-2 flex-1">
-                <Input
-                  ref={(el) => { inputRefs.current[i] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(i, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(i, e)}
-                  className={`h-14 w-full border border-solid ${error ? "border-red-400" : digit ? "border-indigo-400" : "border-[#3a3a3a1a]"} flex items-center justify-center text-center text-xl`}
-                />
-              </div>
-            ))}
-          </div>
-          <FieldError message={error} />
-
-          <p className="self-stretch [font-family:'Montserrat',Helvetica] font-normal text-[14px] text-right leading-4">
-            <span className="font-medium text-[#3a3a3acc] tracking-[0]">Didn't get Code? </span>
-            {canResend ? (
-              <button type="button" onClick={handleResend} className="font-medium text-indigo-600 tracking-[0.06px] cursor-pointer hover:underline bg-transparent border-0 p-0">
-                Resend code
-              </button>
-            ) : (
-              <span className="font-medium text-indigo-600 tracking-[0.06px]">Resend code in {resendCountdown} sec</span>
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-start gap-2 self-stretch w-full">
-        <Button type="submit" className="flex h-10 items-center justify-center gap-2 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0]">
-          Verify
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-// 4. Step 3: Tell Us About You
-interface Step3Props {
   onNext: (data: { name: string; role: string; teamSize: string }) => void;
   onBack: () => void;
   initialData: { name: string; role: string; teamSize: string };
 }
 
-function Step3({ onNext, onBack, initialData }: Step3Props) {
+function Step2({ onNext, onBack, initialData }: Step2Props) {
   const [name, setName] = useState(initialData.name);
   const [role, setRole] = useState(initialData.role);
   const [teamSize, setTeamSize] = useState(initialData.teamSize || "just-me");
@@ -444,7 +447,219 @@ function Step3({ onNext, onBack, initialData }: Step3Props) {
   );
 }
 
-// 5. Step 4: Choose your Focus
+// 4. Step 3: Set Up Your Workspace (includes Invite Teammates sub-step)
+interface Step3Props {
+  onNext: (data: { workspaceName: string; teammateEmails: string[] }) => void;
+  initialData: { workspaceName: string; teammateEmails: string[] };
+}
+
+const quickTips = [
+  "Separate multiple emails with commas",
+  "Press Enter or comma to add each teammate",
+  "They won't receive an invite until you've completed your setup.",
+  "You can skip this step and invite teammates later",
+];
+
+function Step3({ onNext, initialData }: Step3Props) {
+  const [subStep, setSubStep] = useState(1); // 1 = create workspace, 2 = invite teammates
+  const [workspaceName, setWorkspaceName] = useState(initialData.workspaceName || "");
+  const [teammateEmails, setTeammateEmails] = useState<string[]>(initialData.teammateEmails || []);
+  const [emailValue, setEmailValue] = useState("");
+  const [error, setError] = useState("");
+
+  const handleWorkspaceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!workspaceName.trim()) {
+      setError("Please enter a workspace name.");
+      return;
+    }
+    setSubStep(2);
+  };
+
+  const handleAddEmail = () => {
+    if (!emailValue.trim()) return;
+    const emails = emailValue.split(/[,\s]+/).filter(e => e.includes('@'));
+    if (emails.length > 0) {
+      setTeammateEmails(prev => [...new Set([...prev, ...emails])]);
+      setEmailValue("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      handleAddEmail();
+    }
+  };
+
+  const handleRemoveEmail = (email: string) => {
+    setTeammateEmails(prev => prev.filter(e => e !== email));
+  };
+
+  const handleContinue = () => {
+    onNext({ workspaceName, teammateEmails });
+  };
+
+  // Invite Teammates Form
+  if (subStep === 2) {
+    return (
+      <div className="flex flex-col items-start gap-4 self-stretch w-full">
+        <div className="flex flex-col items-center gap-10 self-stretch w-full rounded-lg">
+          <div className="flex flex-col items-center justify-center gap-10 self-stretch w-full">
+            <div className="flex flex-col items-start justify-center gap-2 self-stretch w-full">
+              <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-[32px] tracking-[0] leading-[normal]">
+                Invite teammates by email
+              </h2>
+              <p className="self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-sm tracking-[0] leading-[normal]">
+                Add their email addresses so they can join your workspace right away.
+                <br /> You can skip this and invite them later.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-start gap-6 self-stretch w-full">
+              <div className="flex flex-col items-start gap-2 self-stretch w-full">
+                <Label className="flex-1 [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-sm tracking-[0.10px] leading-5">
+                  Enter Email Address?
+                </Label>
+                <div className="flex h-14 items-center gap-2 p-4 self-stretch w-full rounded border border-solid border-[#3a3a3a1a]">
+                  <input
+                    type="email"
+                    value={emailValue}
+                    onChange={(e) => setEmailValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={handleAddEmail}
+                    placeholder="eg., Adebanjo@gmail.com"
+                    className="flex-1 [font-family:'Montserrat',Helvetica] font-medium text-sm tracking-[0.50px] leading-4 bg-transparent border-0 outline-none"
+                  />
+                </div>
+                {teammateEmails.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {teammateEmails.map((email) => (
+                      <span key={email} className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm">
+                        {email}
+                        <button onClick={() => handleRemoveEmail(email)} className="ml-1 text-indigo-500 hover:text-indigo-700">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col items-start gap-4 px-6 py-4 self-stretch w-full rounded-2xl border-[0.5px] border-solid border-[#3a3a3a0d] bg-white">
+                <div className="flex items-center gap-1">
+                  <span className="text-indigo-600">💡</span>
+                  <span className="[font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-sm tracking-[0]">
+                    Quick Tips
+                  </span>
+                </div>
+                <div className="flex flex-col items-start gap-2">
+                  {quickTips.map((tip, index) => (
+                    <p key={index} className="[font-family:'Montserrat',Helvetica] font-light text-[#3a3a3ab2] text-sm tracking-[0]">
+                      {tip}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start gap-2 self-stretch w-full">
+            <div className="flex items-center justify-between self-stretch w-full">
+              <button
+                type="button"
+                onClick={handleContinue}
+                className="[font-family:'Montserrat',Helvetica] font-medium text-indigo-600 text-[11px] tracking-[0] cursor-pointer hover:underline bg-transparent border-0 p-0"
+              >
+                Skip for later
+              </button>
+              <Button
+                onClick={handleContinue}
+                className="w-[215px] h-10 bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px]"
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Create Workspace Form
+  return (
+    <form onSubmit={handleWorkspaceSubmit} noValidate className="flex flex-col items-start gap-10 self-stretch w-full">
+      <div className="flex flex-col items-center gap-10 self-stretch w-full rounded-lg">
+        <div className="flex flex-col items-start justify-center gap-10 self-stretch w-full">
+          <div className="flex flex-col items-start gap-2 self-stretch w-full">
+            <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-2xl md:text-[32px] tracking-[0] leading-[normal]">
+              Create your workspace
+            </h2>
+            <p className="self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-sm tracking-[0] leading-[normal]">
+              Name your workspace and invite teammates (if you'd like). You can always add more later, we'll keep things flexible.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-start gap-6 self-stretch w-full">
+            <div className="flex flex-col items-start gap-2 self-stretch w-full">
+              <Label htmlFor="workspace-name" className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-sm tracking-[0.10px] leading-5">
+                What's the name of your workspace?
+              </Label>
+              <Input
+                id="workspace-name"
+                type="text"
+                value={workspaceName}
+                onChange={(e) => { setWorkspaceName(e.target.value); setError(""); }}
+                placeholder="eg., Nexa team"
+                className="h-14 px-4 self-stretch w-full rounded border border-solid border-[#3a3a3a1a] [font-family:'Montserrat',Helvetica] font-medium text-sm"
+              />
+              {error && <FieldError message={error} />}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start gap-2 self-stretch w-full">
+          <Button type="submit" className="h-10 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0]">
+            Continue
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+// 5. Step 4: Choose your Focus (What do you want to achieve?)
+const useCases = [
+  {
+    id: "projects",
+    emoji: "📝",
+    title: "Manage projects or tasks",
+    description: "Plan, track, and complete work efficiently",
+  },
+  {
+    id: "collaborate",
+    emoji: "💬",
+    title: "Collaborate with my team",
+    description: "Share updates, files, and feedback all in one place",
+  },
+  {
+    id: "kpis",
+    emoji: "📈",
+    title: "Track performance or KPIs",
+    description: "Build dashboards to monitor growth and goals",
+  },
+  {
+    id: "workflows",
+    emoji: "🔧",
+    title: "Design workflows or systems",
+    description: "Create reusable templates and internal tools",
+  },
+  {
+    id: "exploring",
+    emoji: "👀",
+    title: "Just exploring for now",
+    description: "Show me around , I'll decide later",
+  },
+];
+
 interface Step4Props {
   onNext: (data: { focus: string }) => void;
   onBack: () => void;
@@ -452,57 +667,107 @@ interface Step4Props {
 }
 
 function Step4({ onNext, onBack, initialData }: Step4Props) {
-  const [focus, setFocus] = useState(initialData.focus);
-  const [error, setError] = useState("");
+  const [selectedUseCase, setSelectedUseCase] = useState(initialData.focus || "projects");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!focus) {
-      setError("Please select a focus area to continue.");
-      return;
-    }
-    onNext({ focus });
+  const handleContinue = () => {
+    onNext({ focus: selectedUseCase });
+  };
+
+  const handleSkip = () => {
+    onNext({ focus: "exploring" });
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col items-start gap-10 self-stretch w-full">
+    <div className="flex flex-col items-start gap-4 self-stretch w-full">
       <div className="flex flex-col items-center gap-10 self-stretch w-full rounded-lg">
         <div className="flex flex-col items-start justify-center gap-10 self-stretch w-full">
           <div className="flex flex-col items-start gap-2 self-stretch w-full">
-            <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-2xl md:text-[32px] tracking-[0] leading-[normal]">
-              Choose your focus
+            <h2 className="self-stretch [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-[32px] tracking-[0] leading-[normal]">
+              What do you want to achieve?
             </h2>
             <p className="self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-sm tracking-[0] leading-[normal]">
-              Select the area you primarily work in. This helps us surface the most relevant tools and insights for you right from the start.
+              Choose a use case so we can recommend the right tools and templates to get you started faster. You can always change this later.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 self-stretch w-full">
-            {FOCUS_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => { setFocus(option.value); setError(""); }}
-                className={`flex items-center justify-center p-4 rounded-lg border border-solid text-left transition-all [font-family:'Montserrat',Helvetica] font-medium text-sm tracking-[0] ${
-                  focus === option.value
-                    ? "bg-indigo-600 border-indigo-600 text-white"
-                    : "bg-white border-[#3a3a3a1a] text-[#3a3a3ae6] hover:border-indigo-300 hover:bg-indigo-50"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className="flex flex-col items-start gap-[16.16px] self-stretch w-full">
+            <div className="flex items-start gap-4 self-stretch w-full">
+              {useCases.slice(0, 3).map((useCase) => {
+                const isSelected = selectedUseCase === useCase.id;
+                return (
+                  <button
+                    key={useCase.id}
+                    type="button"
+                    onClick={() => setSelectedUseCase(useCase.id)}
+                    className={`flex flex-col w-[170px] h-[82.3125px] items-start justify-center gap-[6.46px] p-[9.69px] relative rounded-[3.23px] text-left cursor-pointer transition-all ${
+                      isSelected
+                        ? "bg-[#4f46e50d] border border-solid border-indigo-600"
+                        : "bg-white border-[0.5px] border-solid border-[#3a3a3a33] hover:border-indigo-300"
+                    } ${useCase.id === "kpis" ? "mr-[-25px]" : ""}`}
+                  >
+                    <div className="self-stretch mt-[-0.50px] [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-lg tracking-[0] leading-[normal]">
+                      {useCase.emoji}
+                    </div>
+                    <div className="self-stretch [font-family:'Montserrat',Helvetica] font-semibold text-[#3a3a3ae6] text-[10px] tracking-[0] leading-[normal]">
+                      {useCase.title}
+                    </div>
+                    <p className="self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-[8px] tracking-[0] leading-[normal]">
+                      {useCase.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="inline-flex items-start gap-4 relative">
+              {useCases.slice(3, 5).map((useCase) => {
+                const isSelected = selectedUseCase === useCase.id;
+                return (
+                  <button
+                    key={useCase.id}
+                    type="button"
+                    onClick={() => setSelectedUseCase(useCase.id)}
+                    className={`flex flex-col w-[170px] h-[82.3125px] items-start justify-center gap-[6.46px] p-[9.69px] relative rounded-[3.23px] text-left cursor-pointer transition-all ${
+                      isSelected
+                        ? "bg-[#4f46e50d] border border-solid border-indigo-600"
+                        : "bg-white border-[0.5px] border-solid border-[#3a3a3a33] hover:border-indigo-300"
+                    }`}
+                  >
+                    <div className="self-stretch mt-[-0.50px] [font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3ae6] text-lg tracking-[0] leading-[normal]">
+                      {useCase.emoji}
+                    </div>
+                    <div className="self-stretch [font-family:'Montserrat',Helvetica] font-semibold text-[#3a3a3ae6] text-[10px] tracking-[0] leading-[normal]">
+                      {useCase.title}
+                    </div>
+                    <p className={`self-stretch [font-family:'Montserrat',Helvetica] font-light text-[#3a3a3acc] text-[8px] tracking-[0] leading-[normal] ${useCase.id === "exploring" ? "h-5" : ""}`}>
+                      {useCase.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          {error && <FieldError message={error} />}
         </div>
-        
+
         <div className="flex flex-col items-start gap-2 self-stretch w-full">
-          <Button type="submit" className="h-10 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0]">
-            Get Started
-          </Button>
+          <div className="flex items-center justify-between self-stretch w-full">
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="[font-family:'Montserrat',Helvetica] font-medium text-indigo-600 text-[11px] tracking-[0] leading-[normal] whitespace-nowrap cursor-pointer hover:underline bg-transparent border-0 p-0"
+            >
+              Skip for later
+            </button>
+            <Button
+              onClick={handleContinue}
+              className="w-[215px] h-10 bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px]"
+            >
+              Continue
+            </Button>
+          </div>
         </div>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -532,11 +797,13 @@ function SuccessScreen({ name }: { name: string }) {
 
 // --- Root Component ---
 export const Onboarding = (): JSX.Element => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
 
   const [accountData, setAccountData] = useState({ email: "", password: "" });
   const [profileData, setProfileData] = useState({ name: "", role: "", teamSize: "just-me" });
+  const [workspaceData, setWorkspaceData] = useState({ workspaceName: "", teammateEmails: [] as string[] });
   const [focusData, setFocusData] = useState({ focus: "" });
 
   const handleStep1 = (data: { email: string; password: string }) => {
@@ -544,30 +811,27 @@ export const Onboarding = (): JSX.Element => {
     setCurrentStep(2);
   };
 
-  const handleStep2 = () => setCurrentStep(3);
-
-  const handleStep3 = (data: { name: string; role: string; teamSize: string }) => {
+  const handleStep2 = (data: { name: string; role: string; teamSize: string }) => {
     setProfileData(data);
+    setCurrentStep(3);
+  };
+
+  const handleStep3 = (data: { workspaceName: string; teammateEmails: string[] }) => {
+    setWorkspaceData(data);
     setCurrentStep(4);
   };
 
   const handleStep4 = (data: { focus: string }) => {
     setFocusData(data);
-    setIsComplete(true);
+    navigate("/dashboard");
   };
 
   const handleBack = () => setCurrentStep((s) => Math.max(1, s - 1));
 
   const showBack = currentStep > 1 && !isComplete;
   
-  // Map internal currentStep to sidebar step labels
-  const activeSidebarStep = isComplete 
-    ? 5 
-    : currentStep === 1 || currentStep === 2 
-      ? 1 
-      : currentStep === 3 
-        ? 2 
-        : 4;
+  // Map internal currentStep to sidebar step labels (1:1 mapping)
+  const activeSidebarStep = isComplete ? 5 : currentStep;
 
   const stepCount = activeSidebarStep > 4 ? 4 : activeSidebarStep;
 
@@ -639,9 +903,9 @@ export const Onboarding = (): JSX.Element => {
             ) : currentStep === 1 ? (
               <Step1 onNext={handleStep1} initialData={accountData} />
             ) : currentStep === 2 ? (
-              <Step2 email={accountData.email} onNext={handleStep2} onBack={handleBack} />
+              <Step2 onNext={handleStep2} onBack={handleBack} initialData={profileData} />
             ) : currentStep === 3 ? (
-              <Step3 onNext={handleStep3} onBack={handleBack} initialData={profileData} />
+              <Step3 onNext={handleStep3} initialData={workspaceData} />
             ) : currentStep === 4 ? (
               <Step4 onNext={handleStep4} onBack={handleBack} initialData={focusData} />
             ) : null}

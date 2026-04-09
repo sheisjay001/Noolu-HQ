@@ -1,4 +1,22 @@
 {
-  "nodes": [],
+  "nodes": [
+    {
+      "id": "src/screens/Onboarding/Onboarding.tsx",
+      "label": "Onboarding",
+      "routes": [
+        "/"
+      ],
+      "type": "screen",
+      "isRoot": true
+    },
+    {
+      "id": "src/screens/WorkspaceSetup/WorkspaceSetup.tsx",
+      "label": "WorkspaceSetup",
+      "routes": [
+        "/workspace-setup"
+      ],
+      "type": "screen"
+    }
+  ],
   "edges": []
 }
