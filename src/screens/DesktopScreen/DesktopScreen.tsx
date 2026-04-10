@@ -19,11 +19,7 @@ export const DesktopScreen = (): JSX.Element => {
       <header className="w-full h-[83px] flex items-center bg-white">
         <div className="inline-flex ml-10 h-[35.85px] items-center gap-1">
           <div 
-            className="w-[25.5px] h-[25.96px] rounded-full"
-            style={{ 
-              background: 'linear-gradient(185.79deg, rgba(79, 70, 229, 0.9) 4.61%, #38BDF8 58.82%, rgba(56, 189, 248, 0.9) 100.99%)',
-              transform: 'rotate(28.76deg)'
-            }}
+            className="w-[25.5px] h-[25.96px] rounded-full rotate-[28.76deg] bg-gradient-to-br from-[rgba(79,70,229,0.9)] via-[#38BDF8] to-[rgba(56,189,248,0.9)]"
           />
           <span className="[font-family:'Montserrat',Helvetica] font-medium text-[#3a3a3acc] text-[22.6px] tracking-[0] leading-[normal]">
             DIAG

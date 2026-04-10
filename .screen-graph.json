@@ -16,7 +16,32 @@
         "/workspace-setup"
       ],
       "type": "screen"
+    },
+    {
+      "id": "src/screens/Dashboard/Dashboard.tsx",
+      "label": "Dashboard",
+      "routes": [
+        "/dashboard"
+      ],
+      "type": "screen"
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "src\\screens\\Onboarding\\Onboarding.tsx:826:4-to-src\\screens\\Dashboard\\Dashboard.tsx",
+      "source": "src\\screens\\Onboarding\\Onboarding.tsx",
+      "target": "src\\screens\\Dashboard\\Dashboard.tsx",
+      "data": {
+        "viaRoute": "/dashboard",
+        "trigger": {
+          "element": "navigate(\"/dashboard\")",
+          "line": 826,
+          "endLine": 826,
+          "column": 4,
+          "endColumn": 26,
+          "sourceFile": "src\\screens\\Onboarding\\Onboarding.tsx"
+        }
+      }
+    }
+  ]
 }
