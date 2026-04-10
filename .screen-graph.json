@@ -10,6 +10,14 @@
       "isRoot": true
     },
     {
+      "id": "src/screens/Auth/Login.tsx",
+      "label": "Login",
+      "routes": [
+        "/login"
+      ],
+      "type": "screen"
+    },
+    {
       "id": "src/screens/WorkspaceSetup/WorkspaceSetup.tsx",
       "label": "WorkspaceSetup",
       "routes": [
@@ -28,18 +36,66 @@
   ],
   "edges": [
     {
-      "id": "src\\screens\\Onboarding\\Onboarding.tsx:826:4-to-src\\screens\\Dashboard\\Dashboard.tsx",
+      "id": "src\\screens\\Onboarding\\Onboarding.tsx:417:27-to-src\\screens\\Auth\\Login.tsx",
+      "source": "src\\screens\\Onboarding\\Onboarding.tsx",
+      "target": "src\\screens\\Auth\\Login.tsx",
+      "data": {
+        "viaRoute": "/login",
+        "trigger": {
+          "element": "navigate('/login')",
+          "line": 417,
+          "endLine": 417,
+          "column": 27,
+          "endColumn": 45,
+          "sourceFile": "src\\screens\\Onboarding\\Onboarding.tsx"
+        }
+      }
+    },
+    {
+      "id": "src\\screens\\Onboarding\\Onboarding.tsx:917:4-to-src\\screens\\Dashboard\\Dashboard.tsx",
       "source": "src\\screens\\Onboarding\\Onboarding.tsx",
       "target": "src\\screens\\Dashboard\\Dashboard.tsx",
       "data": {
         "viaRoute": "/dashboard",
         "trigger": {
           "element": "navigate(\"/dashboard\")",
-          "line": 826,
-          "endLine": 826,
+          "line": 917,
+          "endLine": 917,
           "column": 4,
           "endColumn": 26,
           "sourceFile": "src\\screens\\Onboarding\\Onboarding.tsx"
+        }
+      }
+    },
+    {
+      "id": "src\\screens\\Auth\\Login.tsx:25:6-to-src\\screens\\Dashboard\\Dashboard.tsx",
+      "source": "src\\screens\\Auth\\Login.tsx",
+      "target": "src\\screens\\Dashboard\\Dashboard.tsx",
+      "data": {
+        "viaRoute": "/dashboard",
+        "trigger": {
+          "element": "navigate('/dashboard')",
+          "line": 25,
+          "endLine": 25,
+          "column": 6,
+          "endColumn": 28,
+          "sourceFile": "src\\screens\\Auth\\Login.tsx"
+        }
+      }
+    },
+    {
+      "id": "src\\screens\\Auth\\Login.tsx:80:12-to-src\\screens\\Onboarding\\Onboarding.tsx",
+      "source": "src\\screens\\Auth\\Login.tsx",
+      "target": "src\\screens\\Onboarding\\Onboarding.tsx",
+      "data": {
+        "viaRoute": "/",
+        "trigger": {
+          "element": "<Link to=\"/\" className=\"text-indigo-600 hover:underline font-medium\">\n              Sign up\n            </Link>",
+          "line": 80,
+          "endLine": 82,
+          "column": 12,
+          "endColumn": 19,
+          "sourceFile": "src\\screens\\Auth\\Login.tsx"
         }
       }
     }

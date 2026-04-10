@@ -33,6 +33,7 @@ const FOCUS_OPTIONS = [
 
 const OTP_LENGTH = 6;
 const RESEND_TIMEOUT = 10;
+const API_URL = 'http://localhost:3001/api';
 
 // --- Validation Logic ---
 const validate = {
@@ -103,6 +104,7 @@ function Stepper({ activeStep }: { activeStep: number }) {
 
 // 2. Step 1: Account Creation (includes OTP verification as sub-step)
 function Step1({ onNext, initialData }: any) {
+  const navigate = useNavigate();
   const [subStep, setSubStep] = useState(1); // 1 = form, 2 = OTP
   const [email, setEmail] = useState(initialData.email || "");
   const [password, setPassword] = useState(initialData.password || "");
@@ -111,6 +113,8 @@ function Step1({ onNext, initialData }: any) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "", confirm: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   // OTP state
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
@@ -156,26 +160,80 @@ function Step1({ onNext, initialData }: any) {
     inputRefs.current[lastFilled]?.focus();
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend) return;
-    setCanResend(false);
-    setResendCountdown(RESEND_TIMEOUT);
-    setOtp(Array(OTP_LENGTH).fill(""));
+    
+    setIsLoading(true);
     setOtpError("");
-    inputRefs.current[0]?.focus();
+    
+    try {
+      const response = await fetch(`${API_URL}/auth/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resend OTP');
+      }
+      
+      setCanResend(false);
+      setResendCountdown(RESEND_TIMEOUT);
+      setOtp(Array(OTP_LENGTH).fill(""));
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : 'Failed to resend code');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = otp.join("");
     if (code.length < OTP_LENGTH) {
       setOtpError("Please enter all 6 digits of the verification code.");
       return;
     }
-    onNext({ email, password });
+    
+    setIsLoading(true);
+    setApiError("");
+    
+    try {
+      // Call backend signup API
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName: '', // Can be collected in Step 2
+          lastName: '',  // Can be collected in Step 2
+          otp: code
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed');
+      }
+      
+      // Store token and user data
+      localStorage.setItem('token', data.token);
+      
+      // Continue to next step
+      onNext({ email, password, token: data.token, user: data.user });
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : 'Signup failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAccountSubmit = (e: React.FormEvent) => {
+  const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const emailErr = validate.email(email);
     const passErr = validate.password(password);
@@ -183,10 +241,32 @@ function Step1({ onNext, initialData }: any) {
 
     setErrors({ email: emailErr, password: passErr, confirm: confErr });
     setSubmitted(true);
+    setApiError("");
 
     if (!emailErr && !passErr && !confErr) {
-      setSubStep(2); // Go to OTP verification
-      setResendCountdown(RESEND_TIMEOUT);
+      setIsLoading(true);
+      
+      try {
+        // Request OTP from backend
+        const response = await fetch(`${API_URL}/auth/request-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send OTP');
+        }
+        
+        setSubStep(2); // Go to OTP verification
+        setResendCountdown(RESEND_TIMEOUT);
+      } catch (err) {
+        setApiError(err instanceof Error ? err.message : 'Failed to send verification code');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -237,8 +317,8 @@ function Step1({ onNext, initialData }: any) {
         </div>
 
         <div className="flex flex-col items-start gap-2 self-stretch w-full">
-          <Button type="submit" className="flex h-10 items-center justify-center gap-2 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0]">
-            Verify
+          <Button type="submit" disabled={isLoading} className="flex h-10 items-center justify-center gap-2 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0] disabled:opacity-50">
+            {isLoading ? 'Verifying...' : 'Verify'}
           </Button>
           <button type="button" onClick={() => setSubStep(1)} className="self-stretch text-center [font-family:'Montserrat',Helvetica] font-medium text-[11px] text-indigo-600 hover:underline bg-transparent border-0 p-0 cursor-pointer">
             Back to account creation
@@ -259,6 +339,12 @@ function Step1({ onNext, initialData }: any) {
           Enter your email and set a secure password. This helps us keep your account safe and ready for future logins.
         </p>
       </div>
+
+      {apiError && (
+        <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 rounded-md self-stretch">
+          {apiError}
+        </div>
+      )}
 
       <div className="flex flex-col items-start gap-6 self-stretch w-full">
         {/* Email */}
@@ -321,12 +407,17 @@ function Step1({ onNext, initialData }: any) {
       </div>
 
       <div className="flex flex-col items-start gap-2 self-stretch w-full">
-        <Button type="submit" className="h-auto flex items-center justify-center gap-2 px-4 py-3 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0]">
-          Create Account
+        <Button type="submit" disabled={isLoading} className="h-auto flex items-center justify-center gap-2 px-4 py-3 self-stretch w-full bg-indigo-600 hover:bg-indigo-700 rounded text-white [font-family:'Montserrat',Helvetica] font-bold text-[11px] leading-[100%] tracking-[0] disabled:opacity-50">
+          {isLoading ? 'Sending code...' : 'Create Account'}
         </Button>
         <p className="self-stretch text-center [font-family:'Montserrat',Helvetica] font-medium text-[11px] leading-[16px] tracking-[0.5px]">
           <span className="text-[#3a3a3ae6]">Already have an account? </span>
-          <span className="text-indigo-600 cursor-pointer hover:underline">Login</span>
+          <span 
+            className="text-indigo-600 cursor-pointer hover:underline"
+            onClick={() => navigate('/login')}
+          >
+            Login
+          </span>
         </p>
       </div>
 
