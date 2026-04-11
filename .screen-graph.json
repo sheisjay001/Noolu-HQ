@@ -98,6 +98,22 @@
           "sourceFile": "src\\screens\\Auth\\Login.tsx"
         }
       }
+    },
+    {
+      "id": "src\\screens\\Dashboard\\Dashboard.tsx:16:6-to-src\\screens\\Auth\\Login.tsx",
+      "source": "src\\screens\\Dashboard\\Dashboard.tsx",
+      "target": "src\\screens\\Auth\\Login.tsx",
+      "data": {
+        "viaRoute": "/login",
+        "trigger": {
+          "element": "navigate('/login')",
+          "line": 16,
+          "endLine": 16,
+          "column": 6,
+          "endColumn": 24,
+          "sourceFile": "src\\screens\\Dashboard\\Dashboard.tsx"
+        }
+      }
     }
   ]
 }
