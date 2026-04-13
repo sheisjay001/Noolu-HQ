@@ -24,32 +24,28 @@ export const FrameWrapperSubsection = (): JSX.Element => {
   ];
 
   return (
-    <div className="flex w-[995px] items-start gap-6 absolute top-44 left-[245px]">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="relative flex-1 grow h-[105px] bg-white rounded-[3px] overflow-hidden border-[0.5px] border-solid border-[#3a3a3a1a]"
+          className="bg-white rounded-lg p-4 lg:p-6 border border-[#3a3a3a1a] shadow-sm"
         >
-          <div className="flex flex-col w-[calc(100%_-_30px)] items-start gap-1 relative top-6 left-4">
-            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex items-center justify-around gap-4 relative self-stretch w-full flex-[0_0_auto]">
-                <div className="relative flex-1 mt-[-1.00px] [font-family:'Montserrat-Medium',Helvetica] font-medium text-[#3a3a3a99] text-xs tracking-[0.24px] leading-[18px]">
-                  {stat.label}
-                </div>
+          <div className="flex flex-col gap-2">
+            <div className="[font-family:'Montserrat-Medium',Helvetica] font-medium text-[#3a3a3a99] text-xs tracking-[0.24px] leading-[18px]">
+              {stat.label}
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="[font-family:'Montserrat-Bold',Helvetica] font-bold text-[#3a3a3ae6] text-lg lg:text-[20px] tracking-[0] leading-[30px] whitespace-nowrap">
+                {stat.value}
               </div>
-              <div className="flex items-center gap-4 relative self-stretch w-full flex-[0_0_auto]">
-                <div className="relative flex items-center w-fit mt-[-1.00px] [font-family:'Montserrat-Bold',Helvetica] font-bold text-[#3a3a3ae6] text-[20px] tracking-[0] leading-[30px] align-middle whitespace-nowrap">
-                  {stat.value}
-                </div>
-                <p className="relative flex items-center w-fit [font-family:'DM_Sans-Medium',Helvetica] font-medium text-transparent text-xs tracking-[0.06px] leading-[18px] whitespace-nowrap">
-                  <span className={`${stat.changeColor} tracking-[0.01px]`}>
-                    {stat.changeText}{" "}
-                  </span>
-                  <span className="text-[#3a3a3a66] tracking-[0.01px]">
-                    {stat.suffix}
-                  </span>
-                </p>
-              </div>
+              <p className="[font-family:'DM_Sans-Medium',Helvetica] font-medium text-xs tracking-[0.06px] leading-[18px]">
+                <span className={`${stat.changeColor}`}>
+                  {stat.changeText}{" "}
+                </span>
+                <span className="text-[#3a3a3a66]">
+                  {stat.suffix}
+                </span>
+              </p>
             </div>
           </div>
         </div>

@@ -941,7 +941,7 @@ export const Onboarding = (): JSX.Element => {
       </header>
 
       {/* Main Content */}
-      <main className="flex flex-col md:flex-row gap-8 md:gap-0 md:ml-20 md:pt-[69px] w-[1200px] h-[812px] md:items-start md:justify-between">
+      <main className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:ml-10 xl:ml-20 lg:pt-10 xl:pt-[69px] w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-83px)] items-start justify-center lg:justify-between">
         
         {/* Left Stepper */}
         <Stepper activeStep={activeSidebarStep} />

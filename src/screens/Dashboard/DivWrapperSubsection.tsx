@@ -29,9 +29,9 @@ const barData = [
 
 export const DivWrapperSubsection = (): JSX.Element => {
   return (
-    <div className="flex w-[995px] items-center justify-between absolute top-[313px] left-[245px]">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
       {/* Revenue Over Time Chart */}
-      <div className="flex flex-col w-[385px] h-[231.22px] items-start gap-[29.74px] relative border-[0.5px] border-solid border-[#3a3a3a1a]">
+      <div className="flex flex-col h-[231.22px] items-start gap-[29.74px] bg-white rounded-lg border border-[#3a3a3a1a] shadow-sm overflow-hidden">
         <div className="relative self-stretch w-full h-[231.22px] bg-white rounded-[2.24px] overflow-hidden">
           {/* X Axis Labels */}
           <div className="flex w-[calc(100%_-_62px)] items-start justify-between absolute top-[211px] left-[52px]">
@@ -125,7 +125,7 @@ export const DivWrapperSubsection = (): JSX.Element => {
         </div>
       </div>
       {/* Top Performing Plans Chart */}
-      <div className="flex flex-col w-[385px] h-[231.22px] items-start gap-[29.74px] relative border-[0.5px] border-solid border-[#3a3a3a1a]">
+      <div className="flex flex-col h-[231.22px] items-start gap-[29.74px] bg-white rounded-lg border border-[#3a3a3a1a] shadow-sm overflow-hidden">
         <div className="relative self-stretch w-full h-[231.22px] bg-white rounded-[2.24px] overflow-hidden">
           {/* X Axis Labels */}
           <div className="flex w-[calc(100%_-_62px)] items-start justify-between absolute top-[204px] left-[52px]">
@@ -194,7 +194,7 @@ export const DivWrapperSubsection = (): JSX.Element => {
         </div>
       </div>
       {/* User Distribution By Country */}
-      <div className="flex flex-col w-[180px] h-[231.3px] items-start gap-[1.8px] px-[9px] py-[9.45px] relative bg-white rounded-[1.8px] overflow-hidden border-[0.5px] border-solid border-[#3a3a3a1a]">
+      <div className="flex flex-col h-[231.3px] items-start gap-[1.8px] px-[9px] py-[9.45px] bg-white rounded-lg border border-[#3a3a3a1a] shadow-sm overflow-hidden">
         <div className="flex flex-col items-start gap-[7.2px] relative self-stretch w-full flex-[0_0_auto]">
           <div className="flex flex-col h-[14.85px] items-start gap-[13.5px] relative self-stretch w-full">
             <div className="inline-flex items-center gap-[12.6px] relative flex-[0_0_auto]">

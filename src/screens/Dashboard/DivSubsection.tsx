@@ -43,11 +43,14 @@ const signupData = [
 
 export const DivSubsection = (): JSX.Element => {
   return (
-    <div className="flex flex-col w-[995px] items-start gap-6 p-4 absolute top-[568px] left-[247px] bg-white rounded-lg">
-      <div className="relative flex items-center self-stretch mt-[-1.00px] [font-family:'Montserrat-Medium',Helvetica] font-medium text-[#3a3a3ae6] text-xl tracking-[-0.20px] leading-[30px]">
+    <div className="flex flex-col w-full items-start gap-4 lg:gap-6 p-4 bg-white rounded-lg border border-[#3a3a3a1a] shadow-sm">
+      <div className="relative flex items-center self-stretch [font-family:'Montserrat-Medium',Helvetica] font-medium text-[#3a3a3ae6] text-lg lg:text-xl tracking-[-0.20px] leading-[30px]">
         Latest Signups
       </div>
-      <div className="flex flex-col items-start gap-6 relative self-stretch w-full flex-[0_0_auto]">
+      
+      {/* Table container with horizontal scroll on mobile */}
+      <div className="w-full overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0">
+        <div className="flex flex-col items-start gap-6 min-w-[600px] lg:min-w-0">
         <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] rounded overflow-hidden">
           <div className="h-12 gap-10 bg-neutralnewneutral-s1 rounded-[4px_4px_0px_0px] flex items-center relative self-stretch w-full border-b [border-bottom-style:solid] border-[#3a3a3a1a]">
             <div className="px-6 py-2 flex-1 grow flex items-center relative self-stretch">
@@ -120,6 +123,7 @@ export const DivSubsection = (): JSX.Element => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

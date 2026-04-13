@@ -1,10 +1,14 @@
-import { Gift01 } from "@untitled-ui/icons-react";
+import { Gift01, X } from "@untitled-ui/icons-react";
 import { ChartBar } from "../../components/ChartBar";
 import { ChartLine } from "../../components/ChartLine";
 import { GearSix } from "../../components/GearSix";
 import { HouseSimple } from "../../components/HouseSimple";
 import { PlugsConnected } from "../../components/PlugsConnected";
 import { Users } from "../../components/Users";
+
+interface NavSubsectionProps {
+  onClose?: () => void;
+}
 
 const navItems = [
   {
@@ -39,17 +43,33 @@ const navItems = [
   },
 ];
 
-export const NavSubsection = (): JSX.Element => {
+export const NavSubsection = ({ onClose }: NavSubsectionProps): JSX.Element => {
   return (
-    <div className="absolute top-0 left-0 w-[221px] h-[1024px] bg-white">
-      <div className="absolute top-[133px] left-[30px] w-[191px] h-[43px] bg-[#eeedff66] border-r-2 border-indigo-600" />
-      <div className="inline-flex items-center gap-2 absolute top-6 left-10">
+    <div className="w-[280px] lg:w-[221px] h-full bg-white flex flex-col shadow-lg lg:shadow-none">
+      {/* Close button for mobile */}
+      <div className="flex items-center justify-between p-4 lg:hidden border-b">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full" />
+          <span className="font-medium text-[#3a3a3acc] text-xl">DIAG</span>
+        </div>
+        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Logo for desktop */}
+      <div className="hidden lg:flex items-center gap-2 p-6">
         <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full" />
         <div className="relative w-fit font-medium text-[#3a3a3acc] text-[22.6px]">
           DIAG
         </div>
       </div>
-      <div className="flex flex-col w-[139px] items-start gap-6 absolute top-[140px] left-10">
+
+      {/* Active indicator for desktop */}
+      <div className="hidden lg:block absolute top-[133px] left-[30px] w-[191px] h-[43px] bg-[#eeedff66] border-r-2 border-indigo-600" />
+
+      {/* Navigation Items */}
+      <div className="flex flex-col flex-1 p-4 lg:p-6 lg:pt-8 gap-4 lg:gap-6 overflow-y-auto">
         {navItems.map((item) => (
           <div
             key={item.label}
@@ -66,7 +86,9 @@ export const NavSubsection = (): JSX.Element => {
           </div>
         ))}
       </div>
-      <div className="flex flex-col w-[175px] items-start gap-4 p-4 absolute left-[calc(50.00%_-_88px)] bottom-20 bg-gray-50 rounded-2xl border-[0.5px] border-solid border-[#3a3a3a1a]">
+
+      {/* Trial Banner */}
+      <div className="mx-4 mb-4 lg:mx-[calc(50%_-_88px)] lg:mb-20 lg:absolute lg:bottom-0 lg:left-0 flex flex-col w-auto lg:w-[175px] items-start gap-4 p-4 bg-gray-50 rounded-2xl border-[0.5px] border-solid border-[#3a3a3a1a]">
         <div className="flex flex-col items-start gap-2 relative self-stretch w-full flex-[0_0_auto]">
           <div className="relative w-8 h-8 flex items-center justify-center">
             <Gift01 className="w-6 h-6 text-indigo-600" />
