@@ -12,6 +12,15 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Noolu HQ API',
+    status: 'running',
+    endpoints: ['/api/health', '/api/auth', '/api/tables', '/api/data/:table']
+  });
+});
+
 // Check users table on startup
 const checkUsersTable = async () => {
   try {
