@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { DivSubsection } from "./DivSubsection";
 import { DivWrapperSubsection } from "./DivWrapperSubsection";
@@ -8,7 +8,7 @@ import { FrameSubsection } from "./FrameSubsection";
 import { FrameWrapperSubsection } from "./FrameWrapperSubsection";
 import { NavSubsection } from "./NavSubsection";
 
-export const Dashboard = (): JSX.Element => {
+export const Dashboard = (): JSX.Element | null => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
