@@ -99,6 +99,12 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check environment
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set');
+      return res.status(500).json({ error: 'Server configuration error: JWT_SECRET missing' });
+    }
+
     // Find user
     const users = await query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
@@ -131,6 +137,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: error.message });
   }
 });
