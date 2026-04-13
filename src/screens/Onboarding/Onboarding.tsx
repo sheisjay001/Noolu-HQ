@@ -6,6 +6,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
+import { getApiUrl } from "../../lib/utils";
 
 // --- Constants ---
 const STEPS = [
@@ -33,7 +34,7 @@ const FOCUS_OPTIONS = [
 
 const OTP_LENGTH = 6;
 const RESEND_TIMEOUT = 10;
-const API_URL = 'http://localhost:3001/api';
+const API_URL = getApiUrl();
 
 // --- Validation Logic ---
 const validate = {

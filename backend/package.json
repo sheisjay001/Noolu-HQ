@@ -14,5 +14,8 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.4",
     "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "localtunnel": "^2.0.2"
   }
 }

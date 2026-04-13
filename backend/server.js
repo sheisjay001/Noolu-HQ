@@ -110,9 +110,10 @@ app.get('/api/data/:table', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, async () => {
+// Start server - bind to 0.0.0.0 to accept connections from other devices
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📱 For mobile access, use your computer's IP (e.g., http://192.168.x.x:${PORT})`);
   await testConnection();
   await checkUsersTable();
 });

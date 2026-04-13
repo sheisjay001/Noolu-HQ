@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiUrl } from '../lib/utils';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = getApiUrl();
 
 interface User {
   id: number;
